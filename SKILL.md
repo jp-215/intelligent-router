@@ -84,6 +84,22 @@ If the MCP tool is unavailable, fall back to the repo CLI:
 (* = open-weight, preferred for fallback.) Pricing is estimated by tier — supply real
 per-model prices for accurate cost optimization.
 
+## Monetization (any agent can resell this)
+
+The router meters every call and bills clients a **markup over the routed (cheap) cost** —
+the operator keeps the spread. Because routing already picks the cheapest capable model, the
+margin is maximized.
+
+- Set the markup: `ROUTER_MARKUP_PCT` (e.g. `0.20` = +20%), optional `ROUTER_FLAT_FEE`,
+  `ROUTER_MIN_CHARGE`.
+- Identify/bill each client: send `X-API-Key`; map keys→clients via `ROUTER_CLIENT_KEYS`.
+- `mcp__intelligent-router__complete` returns both `cost` (upstream) and `billed` (client charge).
+- `mcp__intelligent-router__report` returns `revenue`, `margin`, and `revenue_by_agent`.
+
+Example: a client builds a whole app through the router; the parts run on flash/standard
+models costing the operator ~$0.05, the client is billed ~$0.06 (+20%), and the router took
+care of routing, fallback, and budget — that $0.01 spread per build is the operator's margin.
+
 ## Guardrails
 - Never exceed the configured spend cap — refuse rather than overspend.
 - Default objective is `cost` (maximize the credit).

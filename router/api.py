@@ -15,10 +15,11 @@ from __future__ import annotations
 
 import os
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from .analyze import analyze_prompt
+from .billing import BillingPolicy
 from .classifier import classify_task
 from .dashboard import dashboard_payload
 from .decompose import plan_feature
@@ -29,7 +30,28 @@ from .router import select_model
 
 app = FastAPI(title="Intelligent Router API", version="0.1.0")
 
-_budget = BudgetManager(global_cap=float(os.getenv("ROUTER_BUDGET_CAP", "50")))
+# Monetization: operator sets a markup; clients are billed cost + markup. The router
+# already routes to the cheapest capable model, so the margin is maximized.
+_budget = BudgetManager(
+    global_cap=float(os.getenv("ROUTER_BUDGET_CAP", "50")),
+    billing=BillingPolicy.from_env(),
+)
+
+
+def client_id(x_api_key: str | None = Header(default=None)) -> str | None:
+    """Identify the calling client/agent for per-client metering & billing.
+
+    Maps an X-API-Key header to a client id via ROUTER_CLIENT_KEYS ("key:client,..."),
+    enabling any agent operator to meter and bill each consumer separately.
+    """
+    if not x_api_key:
+        return None
+    mapping = {}
+    for pair in os.getenv("ROUTER_CLIENT_KEYS", "").split(","):
+        if ":" in pair:
+            k, cid = pair.split(":", 1)
+            mapping[k.strip()] = cid.strip()
+    return mapping.get(x_api_key, x_api_key[:12])  # fall back to key prefix as the id
 
 
 def get_budget() -> BudgetManager:
@@ -127,10 +149,12 @@ def plan(req: PlanRequest, completer=Depends(get_completer)) -> dict:
 
 @app.post("/complete")
 def complete(req: CompleteRequest, completer=Depends(get_completer),
-             budget: BudgetManager = Depends(get_budget)) -> dict:
+             budget: BudgetManager = Depends(get_budget),
+             client: str | None = Depends(client_id)) -> dict:
     ex = Executor(completer, budget, REGISTRY, objective=req.objective)
+    agent = client or req.agent_id  # X-API-Key client wins, for per-client billing
     try:
-        result = ex.run(req.prompt, agent_id=req.agent_id, task_type=req.task_type)
+        result = ex.run(req.prompt, agent_id=agent, task_type=req.task_type)
     except BudgetExceeded as exc:
         raise HTTPException(status_code=402, detail=str(exc)) from exc
     except RuntimeError as exc:
@@ -140,7 +164,9 @@ def complete(req: CompleteRequest, completer=Depends(get_completer),
         "text": result.text,
         "tokens_in": result.tokens_in,
         "tokens_out": result.tokens_out,
-        "cost": round(result.cost, 6),
+        "cost": round(result.cost, 6),       # what the model cost (upstream)
+        "billed": round(result.billed, 6),   # what the client is charged
+        "client": agent,
         "attempts": result.attempts,
     }
 

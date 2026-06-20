@@ -26,7 +26,8 @@ class ExecutionResult:
     text: str
     tokens_in: int
     tokens_out: int
-    cost: float
+    cost: float          # upstream model cost
+    billed: float = 0.0  # client charge (cost + markup)
     attempts: list[str] = field(default_factory=list)
 
 
@@ -59,7 +60,7 @@ class Executor:
             usage = self.budget.record(agent_id, model, task.task_type,
                                        comp.tokens_in, comp.tokens_out)
             return ExecutionResult(model.id, comp.text, comp.tokens_in, comp.tokens_out,
-                                   usage.cost, attempts)
+                                   usage.cost, billed=usage.billed, attempts=attempts)
 
         if not attempts:
             raise BudgetExceeded("; ".join(errors) or "no affordable model")
