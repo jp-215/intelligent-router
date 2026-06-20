@@ -1,2 +1,6 @@
-# Runtime: only httpx (used lazily by providers). Everything else is stdlib.
+# Engine uses only stdlib; httpx (lazy) for provider calls; FastAPI for the API surface.
 httpx>=0.27
+fastapi>=0.110
+uvicorn[standard]>=0.29
+# Optional: expose the API as an MCP server (ENABLE_MCP=1)
+# fastapi-mcp>=0.3

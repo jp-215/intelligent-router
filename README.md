@@ -96,6 +96,37 @@ spend down by agent, model, and task type). `executor.py` enforces caps on the l
 #   Executor(complete, BudgetManager(global_cap=50, agent_caps={"agent-x": 5}), REGISTRY).run(prompt, agent_id="agent-x")
 ```
 
+## API / MCP service
+
+The same engine is exposed over HTTP via FastAPI (`router/api.py`):
+
+| Method | Path | Does | Cost |
+|--------|------|------|------|
+| GET | `/health` | liveness | free |
+| GET | `/models` | list the catalog | free |
+| POST | `/route` | route ONE task → chosen model | free (no model call) |
+| POST | `/plan` | decompose a feature → route every task | 1 cheap call |
+| POST | `/complete` | select → fallback → budget-enforced → run | model call |
+| GET | `/report` | usage + cost analytics | free |
+
+```bash
+pip install -r requirements.txt
+export INFERENCE_API_KEY=...   ROUTER_BUDGET_CAP=50
+uvicorn router.api:app --reload --port 8080      # or: docker build -t router . && docker run -p 8080:8080 router
+
+curl localhost:8080/route -H 'content-type: application/json' \
+  -d '{"prompt":"Write a README","objective":"cost"}'
+curl localhost:8080/complete -H 'content-type: application/json' \
+  -d '{"prompt":"Summarize this","agent_id":"agent-x"}'
+```
+
+`/complete` enforces budget: returns **402** when a hard cap would be breached, **502** if
+all fallback models fail.
+
+### Call it as an MCP
+`pip install fastapi-mcp` and start with `ENABLE_MCP=1` — every endpoint is auto-exposed as
+an MCP tool, so it can be wired into an MCP client (e.g. OpenClaw) and called like any tool.
+
 ## UX dashboard
 
 A static dashboard (`web/index.html`) visualizes the governance analytics: budget gauge
