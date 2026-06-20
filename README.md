@@ -96,11 +96,24 @@ spend down by agent, model, and task type). `executor.py` enforces caps on the l
 #   Executor(complete, BudgetManager(global_cap=50, agent_caps={"agent-x": 5}), REGISTRY).run(prompt, agent_id="agent-x")
 ```
 
+## UX dashboard
+
+A static dashboard (`web/index.html`) visualizes the governance analytics: budget gauge
+(spent / remaining / % of cap), and spend broken down by **model**, **task type**, and
+**agent**. It reads `web/report.json`, produced from a `BudgetManager`:
+
+```bash
+python scripts/gen_demo_data.py          # simulate runs -> web/report.json (no credit)
+cd web && python -m http.server 8000     # open http://localhost:8000
+```
+
+In production, persist real usage and call `router.dashboard.write_payload(budget, "web/report.json")`.
+
 ## Roadmap (rest of the epic)
-- **UX dashboard** — visualize spend, model mix, and per-task routing decisions.
 - **Real pricing + live model verification** (some IDs 403 on the endpoint).
 - **OpenRouter provider** — set `OPENROUTER_API_KEY` to route across providers.
 - **Adaptive routing** — learn from observed quality/latency to tune the tier mapping.
+- **Host the dashboard** (GitHub Pages — needs the repo public).
 
 ---
 

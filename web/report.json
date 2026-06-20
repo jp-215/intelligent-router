@@ -1,0 +1,29 @@
+{
+  "spent": 0.01848,
+  "remaining": 49.98152,
+  "by_agent": {
+    "docs-bot": 0.00054,
+    "triage-bot": 0.00054,
+    "build-bot": 0.0034,
+    "arch-bot": 0.007,
+    "sec-bot": 0.007
+  },
+  "by_model": {
+    "gemini-3.5-flash": 0.00108,
+    "gemini-3.1-pro-preview": 0.0027,
+    "qwen3.7-plus": 0.0007,
+    "claude-opus-4-8": 0.014
+  },
+  "by_task_type": {
+    "docs": 0.00054,
+    "classify": 0.00027,
+    "extract": 0.00027,
+    "codegen_complex": 0.0027,
+    "test_gen": 0.0007,
+    "architecture": 0.007,
+    "security_review": 0.007
+  },
+  "calls": 8,
+  "global_cap": 50.0,
+  "pct_used": 0.04
+}
