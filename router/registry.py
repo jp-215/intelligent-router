@@ -32,21 +32,21 @@ _REASON_CODE = frozenset({CAP_REASONING, CAP_CODE})
 _REASON_CODE_LONG = frozenset({CAP_REASONING, CAP_CODE, CAP_LONG_CONTEXT})
 _FULL = frozenset({CAP_REASONING, CAP_CODE, CAP_LONG_CONTEXT, CAP_VISION})
 
-# (id, tier, capabilities). All default to the shared inference endpoint.
+# (id, tier, capabilities, open_source). All default to the shared inference endpoint.
 _CATALOG = [
-    ("claude-opus-4-8", "frontier", _FULL),
-    ("claude-opus-4-6", "frontier", _FULL),
-    ("gpt-5.4", "frontier", _FULL),
-    ("gemini-3.1-pro-preview", "pro", _FULL),
-    ("claude-sonnet-4-6", "pro", _FULL),
-    ("deepseek-v4-pro", "pro", _REASON_CODE_LONG),
-    ("glm-5.1", "pro", _REASON_CODE_LONG),
-    ("qwen3.7-plus", "standard", _REASON_CODE_LONG),
-    ("qwen3.5-plus", "standard", _REASON_CODE),
-    ("kimi-k2.6", "standard", _REASON_CODE_LONG),
-    ("glm-4.7", "standard", _REASON_CODE),
-    ("gemini-3.5-flash", "mini", _FULL),
-    ("deepseek-v4-flash", "mini", _REASON_CODE),
+    ("claude-opus-4-8", "frontier", _FULL, False),
+    ("claude-opus-4-6", "frontier", _FULL, False),
+    ("gpt-5.4", "frontier", _FULL, False),
+    ("gemini-3.1-pro-preview", "pro", _FULL, False),
+    ("claude-sonnet-4-6", "pro", _FULL, False),
+    ("deepseek-v4-pro", "pro", _REASON_CODE_LONG, True),
+    ("glm-5.1", "pro", _REASON_CODE_LONG, True),
+    ("qwen3.7-plus", "standard", _REASON_CODE_LONG, True),
+    ("qwen3.5-plus", "standard", _REASON_CODE, True),
+    ("kimi-k2.6", "standard", _REASON_CODE_LONG, True),
+    ("glm-4.7", "standard", _REASON_CODE, True),
+    ("gemini-3.5-flash", "mini", _FULL, False),
+    ("deepseek-v4-flash", "mini", _REASON_CODE, True),
 ]
 
 
@@ -65,6 +65,7 @@ def _apply_overrides(specs: list[ModelSpec]) -> list[ModelSpec]:
                 price_in=float(o.get("price_in", s.price_in)),
                 price_out=float(o.get("price_out", s.price_out)),
                 capabilities=s.capabilities,
+                open_source=s.open_source,
             )
         )
     return out
@@ -72,11 +73,12 @@ def _apply_overrides(specs: list[ModelSpec]) -> list[ModelSpec]:
 
 def build_registry() -> list[ModelSpec]:
     specs = []
-    for model_id, tier, caps in _CATALOG:
+    for model_id, tier, caps, open_source in _CATALOG:
         price_in, price_out = TIER_PRICING[tier]
         specs.append(
             ModelSpec(id=model_id, provider="inference", tier=tier,
-                      price_in=price_in, price_out=price_out, capabilities=caps)
+                      price_in=price_in, price_out=price_out, capabilities=caps,
+                      open_source=open_source)
         )
     return _apply_overrides(specs)
 

@@ -77,13 +77,30 @@ pytest          # fully mocked — runs offline and burns ZERO credit
 
 CI runs ruff + pytest on Python 3.10–3.12.
 
-## Roadmap (the rest of the epic)
+## Use cases covered
+
+**1. Intelligent model selection** — `classifier.py` + `analyze.py` analyze task type *and*
+prompt attributes (estimated size → long-context need, vision hints) to pick the optimal
+model; `router.py` selects the cheapest capable one.
+
+**2. Fallback routing** — `fallback.py` builds an ordered chain (primary + resilient
+backups, preferring open-weight models); `executor.py` tries each in turn, skipping any
+that error — so a provider outage/degradation doesn't fail the request.
+
+**3. Cost governance** — `governance.py` enforces **hard spend caps** (global *and*
+per-agent) checked before every call, with granular usage analytics (`report()` breaks
+spend down by agent, model, and task type). `executor.py` enforces caps on the live path.
+
+```bash
+# the runtime path (intelligent select -> fallback -> budget-enforced):
+#   Executor(complete, BudgetManager(global_cap=50, agent_caps={"agent-x": 5}), REGISTRY).run(prompt, agent_id="agent-x")
+```
+
+## Roadmap (rest of the epic)
 - **UX dashboard** — visualize spend, model mix, and per-task routing decisions.
 - **Real pricing + live model verification** (some IDs 403 on the endpoint).
-- **OpenRouter provider** — set `OPENROUTER_API_KEY` to route across providers; pick the
-  cheaper of equivalent models.
+- **OpenRouter provider** — set `OPENROUTER_API_KEY` to route across providers.
 - **Adaptive routing** — learn from observed quality/latency to tune the tier mapping.
-- **Budget guardrails** — refuse/booststep when a plan would exceed remaining credit.
 
 ---
 

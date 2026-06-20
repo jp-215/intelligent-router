@@ -30,6 +30,7 @@ class ModelSpec:
     price_in: float
     price_out: float
     capabilities: frozenset[str] = field(default_factory=frozenset)
+    open_source: bool = False  # open-weight model — preferred as a resilient fallback
 
     def supports(self, required_caps: frozenset[str]) -> bool:
         return required_caps.issubset(self.capabilities)
