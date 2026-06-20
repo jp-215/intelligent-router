@@ -10,8 +10,29 @@ a frontier model. A README does not need Claude Opus — a flash model handles i
 fraction of the cost. Use this to make a fixed credit (e.g. $50) go as far as possible,
 with automatic fallback on outage and hard spend caps.
 
+## The core value: build an ENTIRE application for a fraction of the cost
+
+Don't burn a frontier model on a whole build. Decompose the app and route each piece to the
+**cheapest model that can do that piece** — flash/mini for boilerplate, READMEs, configs and
+simple components; frontier only for architecture and security. The app gets built; the
+token bill collapses.
+
+**Build-an-app workflow:**
+1. `mcp__intelligent-router__plan` with `{ "feature": "<the whole app/feature>" }` →
+   decomposes into user stories → tasks, each tagged with a type and pre-assigned the
+   cheapest capable model, with a total cost estimate.
+2. For each task, `mcp__intelligent-router__complete` with
+   `{ "prompt": "<the task>", "task_type": "<type>", "agent_id": "<app-name>" }` →
+   generates that artifact on the cheapest capable model (with fallback + budget enforcement).
+3. Assemble the returned artifacts into files and commit/push to GitHub.
+4. `mcp__intelligent-router__report` → show total spend vs. budget per model/task.
+
+The result: README & boilerplate cost ~$0.001 each on a flash model, architecture decisions
+use a frontier model only where it matters, and the whole app ships well under budget.
+
 ## When to use
-- A task or feature needs an LLM and you want to minimize cost without sacrificing quality.
+- **Building a whole application/feature cheaply** — the primary use case (workflow above).
+- A single task needs an LLM and you want the cheapest capable model.
 - You are routing many different kinds of tasks (docs, codegen, review, architecture).
 - You need fallback when a provider degrades, or hard per-agent / global budget limits.
 
