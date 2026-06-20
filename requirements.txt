@@ -1,0 +1,2 @@
+# Runtime: only httpx (used lazily by providers). Everything else is stdlib.
+httpx>=0.27
