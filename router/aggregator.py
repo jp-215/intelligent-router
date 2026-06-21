@@ -28,6 +28,20 @@ EPIC_REDUCE_TIER = "frontier"
 REDUCE_CAPS = frozenset({CAP_REASONING, CAP_CODE})
 
 
+def _sot_block(sot: str) -> str:
+    """Render the immutable Source-of-Truth anchor injected into every reduce prompt.
+
+    Anti-semantic-drift guardrail: the original user request is re-stated to the reducing
+    model so multi-level reduction can't quietly diverge from what was actually asked for.
+    """
+    if not sot:
+        return ""
+    return (
+        "SOURCE OF TRUTH (the original user request — the final result MUST stay faithful "
+        f'to this; do not drift):\n"""\n{sot}\n"""\n\n'
+    )
+
+
 @dataclass
 class RunResult:
     text: str
@@ -80,6 +94,11 @@ class Aggregator:
 
     def run(self, epic_spec: dict, agent_id: str = "aggregator") -> MapReduceResult:
         epic = epic_spec.get("epic", "")
+        # Immutable Source of Truth: the original user dialog/epic text. Falls back to the
+        # epic title if no richer original prompt was supplied. Re-injected into every
+        # reduction so the output can't drift from what the user actually asked for.
+        sot = epic_spec.get("source_of_truth") or epic
+        sot_block = _sot_block(sot)
         steps: list[StepResult] = []
         story_modules: list[tuple[str, str]] = []
 
@@ -104,8 +123,10 @@ class Aggregator:
 
             joined = "\n\n".join(f"### {tmap[i]['title']}\n{outputs[i]}" for i in outputs)
             sr = self.run_task(
+                f"{sot_block}"
                 f"Integrate these task outputs into one coherent module for story "
-                f"'{story.get('title', '')}':\n\n{joined}",
+                f"'{story.get('title', '')}', staying faithful to the SOURCE OF TRUTH "
+                f"above:\n\n{joined}",
                 STORY_REDUCE_TIER, REDUCE_CAPS, agent_id,
             )
             steps.append(StepResult(f"story_reduce:{story['id']}", "story_reduce",
@@ -114,8 +135,10 @@ class Aggregator:
 
         joined = "\n\n".join(f"## {title}\n{text}" for title, text in story_modules)
         er = self.run_task(
+            f"{sot_block}"
             f"Integrate these story modules into the final deliverable for the epic '{epic}'. "
-            f"Validate architectural consistency across modules.\n\n{joined}",
+            f"Validate architectural consistency across modules AND that the result fully "
+            f"satisfies the SOURCE OF TRUTH above.\n\n{joined}",
             EPIC_REDUCE_TIER, REDUCE_CAPS, agent_id,
         )
         steps.append(StepResult("epic_reduce", "epic_reduce", er.model_id, er.tier,

@@ -63,6 +63,42 @@ def test_dependency_context_passed():
     assert "from a" in b_prompt
 
 
+def test_source_of_truth_injected_into_reduces_only():
+    seen = []
+
+    def rec(prompt, min_tier, caps, agent_id):
+        seen.append(prompt)
+        return RunResult("X", "m", min_tier, 0.0, 0.0)
+
+    spec = dict(EPIC)
+    spec["source_of_truth"] = "ORIGINAL USER REQUEST: build signup the exact way I asked"
+    Aggregator(rec).run(spec)
+
+    # Classify by content: reduce prompts say "Integrate", map prompts say "Task:".
+    reduces = [p for p in seen if "Integrate" in p]
+    maps = [p for p in seen if p.startswith("Task:")]
+    assert len(reduces) == 3  # 2 story reduces + 1 epic reduce
+    assert len(maps) == 3
+    # Every reduce must re-state the SoT so it can't drift.
+    assert all("ORIGINAL USER REQUEST" in p for p in reduces)
+    # Cheap map calls stay lean — SoT is NOT injected there (keeps token cost down).
+    assert all("ORIGINAL USER REQUEST" not in p for p in maps)
+
+
+def test_source_of_truth_falls_back_to_epic():
+    seen = []
+
+    def rec(prompt, min_tier, caps, agent_id):
+        seen.append(prompt)
+        return RunResult("X", "m", min_tier, 0.0, 0.0)
+
+    # No explicit source_of_truth -> the epic text is used as the anchor.
+    Aggregator(rec).run(EPIC)
+    epic_reduce_prompt = seen[-1]
+    assert "User signup feature" in epic_reduce_prompt
+    assert "SOURCE OF TRUTH" in epic_reduce_prompt
+
+
 def test_build_runner_routes_and_records_budget():
     class Comp:
         def __init__(self, t):

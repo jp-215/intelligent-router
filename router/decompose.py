@@ -33,18 +33,25 @@ class TaskPlan:
     title: str
     task_type: str
     decision: RoutingDecision
+    # Back-reference to the immutable original user request (anti-semantic-drift).
+    source_of_truth: str = ""
 
 
 @dataclass
 class StoryPlan:
     title: str
     tasks: list[TaskPlan] = field(default_factory=list)
+    # Back-reference to the immutable original user request (anti-semantic-drift).
+    source_of_truth: str = ""
 
 
 @dataclass
 class FeaturePlan:
     feature: str
     stories: list[StoryPlan] = field(default_factory=list)
+    # Immutable Source of Truth: the raw original user prompt for this run. Set once in
+    # plan_feature and never mutated; every Story/Task carries a reference back to it.
+    source_of_truth: str = ""
 
     @property
     def est_cost(self) -> float:
@@ -71,13 +78,14 @@ def plan_feature(feature: str, llm, registry: list[ModelSpec],
     raw = llm(DECOMPOSE_PROMPT.replace("__FEATURE__", feature))
     stories = parse_decomposition(raw)
 
-    plan = FeaturePlan(feature=feature)
+    plan = FeaturePlan(feature=feature, source_of_truth=feature)
     for story in stories:
-        sp = StoryPlan(title=story.get("title", "untitled story"))
+        sp = StoryPlan(title=story.get("title", "untitled story"), source_of_truth=feature)
         for task in story.get("tasks", []):
             title = task.get("title", "untitled task")
             tc = classify_task(title, task.get("type"))
             decision = select_model(tc, registry, objective)
-            sp.tasks.append(TaskPlan(title=title, task_type=tc.task_type, decision=decision))
+            sp.tasks.append(TaskPlan(title=title, task_type=tc.task_type,
+                                     decision=decision, source_of_truth=feature))
         plan.stories.append(sp)
     return plan

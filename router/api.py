@@ -182,6 +182,9 @@ def complete(req: CompleteRequest, completer=Depends(get_completer),
 class BuildRequest(BaseModel):
     epic: str
     stories: list[dict]  # [{id,title,tasks:[{id,title,task_type,depends_on}]}]
+    # Optional raw original user dialog; falls back to `epic`. Re-injected into every
+    # reduce step as the immutable Source of Truth (anti-semantic-drift).
+    source_of_truth: str | None = None
 
 
 @app.post("/build")
@@ -193,7 +196,11 @@ def build(req: BuildRequest, completer=Depends(get_completer),
     agent = client or "aggregator"
     aggr = Aggregator(build_runner(completer, budget))
     try:
-        result = aggr.run({"epic": req.epic, "stories": req.stories}, agent_id=agent)
+        result = aggr.run(
+            {"epic": req.epic, "stories": req.stories,
+             "source_of_truth": req.source_of_truth},
+            agent_id=agent,
+        )
     except BudgetExceeded as exc:
         raise HTTPException(status_code=402, detail=str(exc)) from exc
     except (ValueError, KeyError) as exc:

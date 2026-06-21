@@ -140,6 +140,13 @@ spending frontier dollars only where they matter.
   reducer only ever sees the compressed story modules, never raw task dumps. This keeps the
   context window small (cheaper) and the budget bounded — caps are checked *before* every
   inference call, so a breach aborts with **402** rather than spending.
+- **Immutable Source of Truth (anti-semantic-drift)** — the original user request is the
+  single Source of Truth for the whole run. `decompose.py` embeds the raw prompt in a
+  top-level immutable field and every Story/Task carries a reference back to it; `aggregator.py`
+  re-injects that SoT into **every reduce prompt** (story *and* epic) so multi-level
+  reduction can't quietly drift from what was actually asked for. It's deliberately *not*
+  injected into the cheap map calls — those stay lean to keep token cost down. Pass it via
+  `source_of_truth` on `/build` (falls back to `epic` if omitted).
 
 Exposed as `POST /build` (and the `build` MCP tool).
 
