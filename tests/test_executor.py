@@ -1,8 +1,8 @@
 import pytest
 
-from router.executor import Executor
-from router.governance import BudgetExceeded, BudgetManager
-from router.registry import REGISTRY
+from router.handlers.execution import Executor
+from router.services.governance import BudgetExceeded, BudgetManager
+from router.services.registry import REGISTRY
 
 
 class Comp:

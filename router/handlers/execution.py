@@ -13,11 +13,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .analyze import analyze_prompt
-from .classifier import classify_task
+from ..core.analyze import analyze_prompt
+from ..core.classifier import classify_task
+from ..core.models import ModelSpec
+from ..services.governance import BudgetExceeded, BudgetManager
 from .fallback import build_fallback_chain
-from .governance import BudgetExceeded, BudgetManager
-from .models import ModelSpec
 
 
 @dataclass

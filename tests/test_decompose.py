@@ -1,5 +1,5 @@
-from router.decompose import parse_decomposition, plan_feature
-from router.registry import REGISTRY
+from router.handlers.planning import parse_decomposition, plan_feature
+from router.services.registry import REGISTRY
 
 FAKE_LLM_JSON = """```json
 {"stories": [

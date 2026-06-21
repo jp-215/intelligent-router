@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .classifier import TaskClass
-from .models import ModelSpec, tier_rank
+from ..core.classifier import TaskClass
+from ..core.models import ModelSpec, tier_rank
 
 OBJECTIVES = ("cost", "quality", "balanced")
 

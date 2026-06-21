@@ -9,9 +9,9 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
-from .classifier import classify_task
-from .models import ModelSpec
-from .router import RoutingDecision, select_model
+from ..core.classifier import classify_task
+from ..core.models import ModelSpec
+from .routing import RoutingDecision, select_model
 
 TASK_TYPES = (
     "classify, extract, summarize, docs, boilerplate, commit_message, codegen_simple, "

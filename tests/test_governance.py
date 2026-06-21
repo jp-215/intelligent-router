@@ -1,7 +1,7 @@
 import pytest
 
-from router.governance import BudgetExceeded, BudgetManager
-from router.registry import by_id
+from router.services.governance import BudgetExceeded, BudgetManager
+from router.services.registry import by_id
 
 
 def test_global_cap_enforced():

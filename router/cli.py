@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import argparse
 
-from .classifier import classify_task
-from .decompose import plan_feature
-from .registry import REGISTRY
-from .router import select_model
+from .core.classifier import classify_task
+from .handlers.planning import plan_feature
+from .handlers.routing import select_model
+from .services.registry import REGISTRY
 
 
 def cmd_models(_args) -> int:
@@ -34,7 +34,7 @@ def cmd_route(args) -> int:
 
 
 def _inference_llm(model_id: str):
-    from .providers import InferenceProvider
+    from .services.providers import InferenceProvider
 
     provider = InferenceProvider()
 

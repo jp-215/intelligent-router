@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import os
 
-from .models import (
+from ..core.models import (
     CAP_CODE,
     CAP_LONG_CONTEXT,
     CAP_REASONING,
@@ -84,7 +84,9 @@ def _load_openrouter() -> list[ModelSpec]:
     or ./openrouter-models.json at the repo root."""
     if not os.getenv("OPENROUTER_API_KEY"):
         return []
-    default = os.path.join(os.path.dirname(os.path.dirname(__file__)), "openrouter-models.json")
+    # repo root = router/services/registry.py -> up three levels
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    default = os.path.join(repo_root, "openrouter-models.json")
     path = os.getenv("ROUTER_OPENROUTER_MODELS", default)
     if not path or not os.path.exists(path):
         return []

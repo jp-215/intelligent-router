@@ -1,6 +1,6 @@
-from router.dashboard import dashboard_payload, write_payload
-from router.governance import BudgetManager
-from router.registry import by_id
+from router.handlers.reporting import dashboard_payload, write_payload
+from router.services.governance import BudgetManager
+from router.services.registry import by_id
 
 
 def _budget():

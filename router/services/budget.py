@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .models import ModelSpec
+from ..core.models import ModelSpec
 
 
 @dataclass

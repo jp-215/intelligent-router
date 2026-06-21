@@ -1,5 +1,5 @@
-from router.models import TIERS
-from router.registry import REGISTRY, build_registry, by_id
+from router.core.models import TIERS
+from router.services.registry import REGISTRY, build_registry, by_id
 
 
 def test_all_listed_models_present():

@@ -7,9 +7,9 @@ the whole request down.
 
 from __future__ import annotations
 
-from .classifier import TaskClass
-from .models import ModelSpec
-from .router import candidates, select_model
+from ..core.classifier import TaskClass
+from ..core.models import ModelSpec
+from .routing import candidates, select_model
 
 
 def build_fallback_chain(task: TaskClass, registry: list[ModelSpec],

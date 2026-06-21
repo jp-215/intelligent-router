@@ -1,5 +1,5 @@
-from router.budget import BudgetTracker
-from router.registry import by_id
+from router.services.budget import BudgetTracker
+from router.services.registry import by_id
 
 
 def test_records_and_tracks_spend():

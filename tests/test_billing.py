@@ -1,6 +1,6 @@
-from router.billing import BillingPolicy
-from router.governance import BudgetManager
-from router.registry import by_id
+from router.services.billing import BillingPolicy
+from router.services.governance import BudgetManager
+from router.services.registry import by_id
 
 
 def test_markup_price():

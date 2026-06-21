@@ -1,6 +1,6 @@
 import pytest
 
-from router.dag import CycleError, Node, levels, topological_order, validate
+from router.core.dag import CycleError, Node, levels, topological_order, validate
 
 
 def test_topological_order_respects_deps():

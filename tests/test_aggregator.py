@@ -1,5 +1,5 @@
-from router.aggregator import Aggregator, RunResult, build_runner
-from router.governance import BudgetManager
+from router.handlers.aggregation import Aggregator, RunResult, build_runner
+from router.services.governance import BudgetManager
 
 EPIC = {
     "epic": "User signup feature",

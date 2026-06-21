@@ -1,6 +1,6 @@
 import json
 
-from router.registry import build_registry
+from router.services.registry import build_registry
 
 
 def _write_catalog(tmp_path):
@@ -31,8 +31,8 @@ def test_openrouter_models_absent_without_key(tmp_path, monkeypatch):
 
 
 def test_cheaper_openrouter_model_wins_on_cost(tmp_path, monkeypatch):
-    from router.classifier import classify_task
-    from router.router import select_model
+    from router.core.classifier import classify_task
+    from router.handlers.routing import select_model
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
     monkeypatch.setenv("ROUTER_OPENROUTER_MODELS", _write_catalog(tmp_path))
     reg = build_registry()

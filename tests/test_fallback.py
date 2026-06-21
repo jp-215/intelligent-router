@@ -1,6 +1,6 @@
-from router.classifier import classify_task
-from router.fallback import build_fallback_chain
-from router.registry import REGISTRY
+from router.core.classifier import classify_task
+from router.handlers.fallback import build_fallback_chain
+from router.services.registry import REGISTRY
 
 
 def test_chain_starts_with_cost_primary():

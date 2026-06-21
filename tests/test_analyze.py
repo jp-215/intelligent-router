@@ -1,6 +1,6 @@
-from router.analyze import analyze_prompt, estimate_tokens
-from router.classifier import classify_task
-from router.models import CAP_LONG_CONTEXT, CAP_VISION
+from router.core.analyze import analyze_prompt, estimate_tokens
+from router.core.classifier import classify_task
+from router.core.models import CAP_LONG_CONTEXT, CAP_VISION
 
 
 def test_estimate_tokens():

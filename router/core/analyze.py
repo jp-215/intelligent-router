@@ -8,16 +8,15 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from ..utils.tokens import estimate_tokens
 from .classifier import TaskClass
 from .models import CAP_LONG_CONTEXT, CAP_VISION
 
+# estimate_tokens is re-exported here so historical callers keep working.
+__all__ = ["LONG_CONTEXT_TOKENS", "analyze_prompt", "estimate_tokens"]
+
 LONG_CONTEXT_TOKENS = 8000  # above this estimated input, require long-context capability
 _VISION_HINTS = ("image", "screenshot", "photo", "picture", "this diagram", "attached")
-
-
-def estimate_tokens(text: str) -> int:
-    """Rough token estimate (~4 chars/token), min 1."""
-    return max(1, len(text) // 4)
 
 
 def analyze_prompt(prompt: str, task: TaskClass) -> TaskClass:

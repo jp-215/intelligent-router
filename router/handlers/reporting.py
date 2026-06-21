@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from .governance import BudgetManager
+from ..services.governance import BudgetManager
 
 
 def dashboard_payload(budget: BudgetManager) -> dict:

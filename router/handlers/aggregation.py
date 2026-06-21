@@ -16,12 +16,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .classifier import TaskClass, classify_task
-from .dag import Node, levels
-from .governance import BudgetExceeded, BudgetManager
-from .models import CAP_CODE, CAP_REASONING, ModelSpec
-from .registry import REGISTRY
-from .router import select_model
+from ..core.classifier import TaskClass, classify_task
+from ..core.dag import Node, levels
+from ..core.models import CAP_CODE, CAP_REASONING, ModelSpec
+from ..services.governance import BudgetExceeded, BudgetManager
+from ..services.registry import REGISTRY
+from .routing import select_model
 
 STORY_REDUCE_TIER = "pro"
 EPIC_REDUCE_TIER = "frontier"

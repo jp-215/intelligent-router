@@ -1,5 +1,5 @@
-from router.classifier import classify_task
-from router.models import CAP_VISION
+from router.core.classifier import classify_task
+from router.core.models import CAP_VISION
 
 
 def test_readme_is_cheap_tier():

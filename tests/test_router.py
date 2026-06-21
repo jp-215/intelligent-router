@@ -1,9 +1,9 @@
 import pytest
 
-from router.classifier import classify_task
-from router.models import CAP_VISION, ModelSpec
-from router.registry import REGISTRY
-from router.router import candidates, select_model
+from router.core.classifier import classify_task
+from router.core.models import CAP_VISION, ModelSpec
+from router.handlers.routing import candidates, select_model
+from router.services.registry import REGISTRY
 
 
 def test_cheap_task_routes_to_cheap_model():

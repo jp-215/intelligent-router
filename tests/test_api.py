@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from router.api import app, get_budget, get_completer
-from router.governance import BudgetManager
+from router.services.governance import BudgetManager
 
 
 class Comp:

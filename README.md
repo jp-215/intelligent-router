@@ -89,19 +89,62 @@ pytest          # fully mocked — runs offline and burns ZERO credit
 
 CI runs ruff + pytest on Python 3.10–3.12.
 
+## Project structure
+
+The package is organized in layers, each depending only on the ones below it
+(`utils ← core ← services ← handlers ← routes`) — so the dependency graph is acyclic and
+every file has an obvious home:
+
+```
+router/
+├── config.py              # ⚙️  all env vars read here → typed Settings
+├── schemas.py             # 📦  API request DTOs (Pydantic)
+├── api.py                 # 🚪  create_app(): mounts routers + optional MCP  (uvicorn router.api:app)
+├── routes/                # 🌐  thin HTTP layer (one APIRouter per concern)
+│   ├── dependencies.py    #     shared Depends(): settings, budget, client id, completer
+│   ├── meta.py            #     GET /health, GET /models
+│   ├── routing.py         #     POST /route, /plan, /complete, /build
+│   └── report.py          #     GET /report
+├── handlers/              # 🧠  orchestration the routes call (the business layer)
+│   ├── routing.py         #     select_model / candidates  (model selection)
+│   ├── fallback.py        #     resilient fallback chains
+│   ├── planning.py        #     feature → stories → tasks (decompose + route)
+│   ├── execution.py       #     Executor: classify → fallback → budget-enforced run
+│   ├── aggregation.py     #     Aggregator: hierarchical map-reduce over a DAG
+│   └── reporting.py       #     dashboard payload from the budget ledger
+├── services/              # 🔌  stateful / external infrastructure
+│   ├── registry.py        #     the model catalog (+ pricing / OpenRouter overrides)
+│   ├── providers.py       #     Inference + OpenRouter HTTP clients
+│   ├── governance.py      #     BudgetManager: hard caps + usage analytics
+│   ├── billing.py         #     BillingPolicy: markup → billable price
+│   └── budget.py          #     BudgetTracker
+├── core/                  # 🧱  pure domain types & logic (no IO)
+│   ├── models.py          #     ModelSpec, tiers, capability flags, cost model
+│   ├── classifier.py      #     task → minimum tier + capabilities (rule-based)
+│   ├── analyze.py         #     prompt-attribute refinement (size, vision hints)
+│   └── dag.py             #     DAG validation, topological order, parallel levels
+├── utils/                 # 🔧  shared dependency-free helpers
+│   └── tokens.py          #     estimate_tokens
+└── cli.py                 # 💻  `python -m router.cli` (models / route / plan)
+```
+
+`tests/` covers each module; everything is fully mocked (providers and LLM calls are
+injected fakes), so the suite runs offline and burns zero credit.
+
 ## Use cases covered
 
-**1. Intelligent model selection** — `classifier.py` + `analyze.py` analyze task type *and*
-prompt attributes (estimated size → long-context need, vision hints) to pick the optimal
-model; `router.py` selects the cheapest capable one.
+**1. Intelligent model selection** — `core/classifier.py` + `core/analyze.py` analyze task
+type *and* prompt attributes (estimated size → long-context need, vision hints) to pick the
+optimal model; `handlers/routing.py` selects the cheapest capable one.
 
-**2. Fallback routing** — `fallback.py` builds an ordered chain (primary + resilient
-backups, preferring open-weight models); `executor.py` tries each in turn, skipping any
-that error — so a provider outage/degradation doesn't fail the request.
+**2. Fallback routing** — `handlers/fallback.py` builds an ordered chain (primary + resilient
+backups, preferring open-weight models); `handlers/execution.py` tries each in turn, skipping
+any that error — so a provider outage/degradation doesn't fail the request.
 
-**3. Cost governance** — `governance.py` enforces **hard spend caps** (global *and*
+**3. Cost governance** — `services/governance.py` enforces **hard spend caps** (global *and*
 per-agent) checked before every call, with granular usage analytics (`report()` breaks
-spend down by agent, model, and task type). `executor.py` enforces caps on the live path.
+spend down by agent, model, and task type). `handlers/execution.py` enforces caps on the
+live path.
 
 ```bash
 # the runtime path (intelligent select -> fallback -> budget-enforced):
@@ -128,12 +171,12 @@ spending frontier dollars only where they matter.
        └── map phase: each task → cheapest capable tier, run in parallel by DAG level ──┘
 ```
 
-- **DAG decomposition** (`dag.py`) — tasks declare `depends_on`; the graph is validated
+- **DAG decomposition** (`core/dag.py`) — tasks declare `depends_on`; the graph is validated
   acyclic (Kahn's algorithm) and split into **parallel levels** so independent tasks in the
   same level run concurrently in the map phase.
 - **Asymmetric map phase** — every leaf task is classified and routed to the *cheapest
   capable* tier (flash/nano/standard). Most of the work happens here, cheaply.
-- **Hierarchical reduce** (`aggregator.py`) — story-level reductions condense each story's
+- **Hierarchical reduce** (`handlers/aggregation.py`) — story-level reductions condense each story's
   task outputs on a **pro** model; the epic-level reduce integrates the compressed story
   modules on a **frontier** model for final architectural validation.
 - **State isolation** — each story's raw task outputs stay inside that story; the epic
@@ -141,9 +184,9 @@ spending frontier dollars only where they matter.
   context window small (cheaper) and the budget bounded — caps are checked *before* every
   inference call, so a breach aborts with **402** rather than spending.
 - **Immutable Source of Truth (anti-semantic-drift)** — the original user request is the
-  single Source of Truth for the whole run. `decompose.py` embeds the raw prompt in a
-  top-level immutable field and every Story/Task carries a reference back to it; `aggregator.py`
-  re-injects that SoT into **every reduce prompt** (story *and* epic) so multi-level
+  single Source of Truth for the whole run. `handlers/planning.py` embeds the raw prompt in a
+  top-level immutable field and every Story/Task carries a reference back to it;
+  `handlers/aggregation.py` re-injects that SoT into **every reduce prompt** (story *and* epic) so multi-level
   reduction can't quietly drift from what was actually asked for. It's deliberately *not*
   injected into the cheap map calls — those stay lean to keep token cost down. Pass it via
   `source_of_truth` on `/build` (falls back to `epic` if omitted).
@@ -193,7 +236,7 @@ python scripts/gen_demo_data.py          # simulate runs -> web/report.json (no 
 cd web && python -m http.server 8000     # open http://localhost:8000
 ```
 
-In production, persist real usage and call `router.dashboard.write_payload(budget, "web/report.json")`.
+In production, persist real usage and call `router.handlers.reporting.write_payload(budget, "web/report.json")`.
 
 ## Roadmap (rest of the epic)
 - **Real pricing + live model verification** (some IDs 403 on the endpoint).

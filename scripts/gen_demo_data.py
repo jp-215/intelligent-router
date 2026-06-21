@@ -11,10 +11,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from router.dashboard import write_payload  # noqa: E402
-from router.executor import Executor  # noqa: E402
-from router.governance import BudgetManager  # noqa: E402
-from router.registry import REGISTRY  # noqa: E402
+from router.handlers.execution import Executor  # noqa: E402
+from router.handlers.reporting import write_payload  # noqa: E402
+from router.services.governance import BudgetManager  # noqa: E402
+from router.services.registry import REGISTRY  # noqa: E402
 
 
 class _Comp:

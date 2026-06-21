@@ -21,9 +21,9 @@ the final integration.
 
 ## Phases
 1. **Decompose → DAG** — Epic split into stories and tasks; each task declares
-   `depends_on`. `router/dag.py` validates acyclicity and computes parallel **levels**.
+   `depends_on`. `router/core/dag.py` validates acyclicity and computes parallel **levels**.
 2. **Map (execute)** — each task routed to the *cheapest capable* model
-   (`router.router.select_model`), executed in dependency order; tasks in the same level
+   (`router.handlers.routing.select_model`), executed in dependency order; tasks in the same level
    are independent and parallelizable.
 3. **Reduce 1 (story)** — a story's task outputs are condensed on a **pro** model.
 4. **Reduce 2 (epic)** — compressed story modules are integrated on a **frontier** model.
@@ -31,15 +31,15 @@ the final integration.
 
 ## Guardrails (enforced in code)
 - **State isolation** — task outputs stay within their story; the epic reducer sees only
-  compressed story modules, never raw task dumps (`router/aggregator.py`).
+  compressed story modules, never raw task dumps (`router/handlers/aggregation.py`).
 - **Acyclic enforcement** — `dag.validate` rejects unknown deps and cycles before any call.
 - **Budget before inference** — `build_runner` checks `BudgetManager.can_afford` *before*
   each call; `/build` returns **402** if a hard cap would be breached.
 - **Offline tests** — the whole pipeline is unit-tested with injected fakes; no live credit.
 
 ## Modules
-- `router/dag.py` — DAG validation, topological order, parallel levels.
-- `router/aggregator.py` — `Aggregator` (map-reduce) + `build_runner` (production run_task).
+- `router/core/dag.py` — DAG validation, topological order, parallel levels.
+- `router/handlers/aggregation.py` — `Aggregator` (map-reduce) + `build_runner` (production run_task).
 - `router/api.py` — `POST /build` runs the pipeline over a supplied DAG.
 
 ## API
@@ -59,7 +59,7 @@ Returns the final integrated output, per-step model/tier, `tier_usage`, and tota
 cost/billed (with the frontier epic-reduce included).
 
 ## Providers / scaling
-Models carry a `provider` field; `router/providers.py` ships an OpenRouter provider that
+Models carry a `provider` field; `router/services/providers.py` ships an OpenRouter provider that
 activates with `OPENROUTER_API_KEY`. Add providers by registering models with the new
 `provider` and supplying a client — routing, fallback, budgeting, and map-reduce all apply
 unchanged.
