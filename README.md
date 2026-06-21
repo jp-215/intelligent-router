@@ -108,6 +108,41 @@ spend down by agent, model, and task type). `executor.py` enforces caps on the l
 #   Executor(complete, BudgetManager(global_cap=50, agent_caps={"agent-x": 5}), REGISTRY).run(prompt, agent_id="agent-x")
 ```
 
+## Map-Reduce orchestration (build a whole app)
+
+For a full **epic** (not a single task), the router runs a **hierarchical Map-Reduce over a
+task DAG** instead of one flat model call — this is how you build an entire application while
+spending frontier dollars only where they matter.
+
+```
+                    [ Epic: high-level feature ]
+                               ▲
+                 Reduce 2 (epic) ── FRONTIER model: claude-opus-4-8 / gpt-5.4
+              ┌────────────────┴────────────────┐
+        [ Story: data/domain ]          [ Story: interface/api ]
+                 ▲                                 ▲
+       Reduce 1 (story) ── PRO model      Reduce 1 (story) ── PRO model
+          ┌──────┴──────┐                    ┌──────┴──────┐
+       [Task A]      [Task B]             [Task C]      [Task D]
+       (flash)       (nano)              (standard)     (flash)
+       └── map phase: each task → cheapest capable tier, run in parallel by DAG level ──┘
+```
+
+- **DAG decomposition** (`dag.py`) — tasks declare `depends_on`; the graph is validated
+  acyclic (Kahn's algorithm) and split into **parallel levels** so independent tasks in the
+  same level run concurrently in the map phase.
+- **Asymmetric map phase** — every leaf task is classified and routed to the *cheapest
+  capable* tier (flash/nano/standard). Most of the work happens here, cheaply.
+- **Hierarchical reduce** (`aggregator.py`) — story-level reductions condense each story's
+  task outputs on a **pro** model; the epic-level reduce integrates the compressed story
+  modules on a **frontier** model for final architectural validation.
+- **State isolation** — each story's raw task outputs stay inside that story; the epic
+  reducer only ever sees the compressed story modules, never raw task dumps. This keeps the
+  context window small (cheaper) and the budget bounded — caps are checked *before* every
+  inference call, so a breach aborts with **402** rather than spending.
+
+Exposed as `POST /build` (and the `build` MCP tool).
+
 ## API / MCP service
 
 The same engine is exposed over HTTP via FastAPI (`router/api.py`):
@@ -119,6 +154,7 @@ The same engine is exposed over HTTP via FastAPI (`router/api.py`):
 | POST | `/route` | route ONE task → chosen model | free (no model call) |
 | POST | `/plan` | decompose a feature → route every task | 1 cheap call |
 | POST | `/complete` | select → fallback → budget-enforced → run | model call |
+| POST | `/build` | epic → DAG → map-reduce (frontier only on epic reduce) | many calls |
 | GET | `/report` | usage + cost analytics | free |
 
 ```bash
@@ -154,7 +190,8 @@ In production, persist real usage and call `router.dashboard.write_payload(budge
 
 ## Roadmap (rest of the epic)
 - **Real pricing + live model verification** (some IDs 403 on the endpoint).
-- **OpenRouter provider** — set `OPENROUTER_API_KEY` to route across providers.
+- ✅ **OpenRouter provider** — set `OPENROUTER_API_KEY` to route across providers.
+- ✅ **Map-Reduce DAG orchestration** — `POST /build` runs epic → stories → tasks.
 - **Adaptive routing** — learn from observed quality/latency to tune the tier mapping.
 - **Host the dashboard** (GitHub Pages — needs the repo public).
 
