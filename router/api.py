@@ -18,6 +18,7 @@ import os
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from .aggregator import Aggregator, build_runner
 from .analyze import analyze_prompt
 from .billing import BillingPolicy
 from .classifier import classify_task
@@ -65,7 +66,9 @@ def get_completer():
     provider = InferenceProvider()
 
     def complete(model_id: str, prompt: str):
-        return provider.complete(model_id, [{"role": "user", "content": prompt}], max_tokens=2048)
+        mt = int(os.getenv("ROUTER_MAX_TOKENS", "8000"))
+        msgs = [{"role": "user", "content": prompt}]
+        return provider.complete(model_id, msgs, max_tokens=mt)
 
     return complete
 
@@ -168,6 +171,36 @@ def complete(req: CompleteRequest, completer=Depends(get_completer),
         "billed": round(result.billed, 6),   # what the client is charged
         "client": agent,
         "attempts": result.attempts,
+    }
+
+
+class BuildRequest(BaseModel):
+    epic: str
+    stories: list[dict]  # [{id,title,tasks:[{id,title,task_type,depends_on}]}]
+
+
+@app.post("/build")
+def build(req: BuildRequest, completer=Depends(get_completer),
+          budget: BudgetManager = Depends(get_budget),
+          client: str | None = Depends(client_id)) -> dict:
+    """Map-Reduce a task DAG: map tasks on cheap tiers, story-reduce on pro, epic-reduce
+    on a frontier model."""
+    agent = client or "aggregator"
+    aggr = Aggregator(build_runner(completer, budget))
+    try:
+        result = aggr.run({"epic": req.epic, "stories": req.stories}, agent_id=agent)
+    except BudgetExceeded as exc:
+        raise HTTPException(status_code=402, detail=str(exc)) from exc
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=400, detail=f"invalid DAG: {exc}") from exc
+    return {
+        "epic": result.epic,
+        "final_output": result.final_output,
+        "total_cost": result.total_cost,
+        "total_billed": result.total_billed,
+        "tier_usage": result.tier_usage,
+        "used_frontier": result.used_frontier,
+        "steps": [vars(s) for s in result.steps],
     }
 
 
