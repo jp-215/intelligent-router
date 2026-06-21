@@ -46,8 +46,17 @@ FastAPI service. Default to the **`route`** tool; escalate to `complete`/`plan` 
 | "route X" / pick the model for a task | `mcp__intelligent-router__route` | free |
 | "run X" / get the answer | `mcp__intelligent-router__complete` | real model call |
 | "break down feature X" | `mcp__intelligent-router__plan` | one cheap call |
+| "build this app/DAG" (map-reduce) | `mcp__intelligent-router__build` | tiered calls |
 | "what models?" | `mcp__intelligent-router__models` | free |
 | "usage" / "spend" / "budget" | `mcp__intelligent-router__report` | free |
+
+**`build`** runs the DAG map-reduce: map tasks → cheap tiers, story-reduce → **pro**,
+epic-reduce → **frontier** (frontier used + billed only at final integration). Supply
+`{epic, stories:[{id,title,tasks:[{id,title,task_type,depends_on}]}]}`.
+
+**Multi-provider:** with `OPENROUTER_API_KEY` set, routing + fallback span the inference
+endpoint *and* OpenRouter — cheapest capable model wins across providers, with cross-provider
+failover.
 
 Default request body: `{ "prompt": <user text>, "objective": "cost" }`. Use
 `objective: "quality"` or `"balanced"` only when the user asks. For `complete`, pass
