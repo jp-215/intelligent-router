@@ -50,6 +50,18 @@ Catalog (all on the shared inference endpoint by default): `claude-opus-4-8`,
 > list. Cost routing is only as accurate as the numbers. Drop real prices into a JSON file
 > and point `ROUTER_PRICING_JSON` at it (see `.env.example`).
 
+### Multi-provider (OpenRouter)
+
+Set `OPENROUTER_API_KEY` and the router also loads an **OpenRouter** model catalog
+(`openrouter-models.json`, real slugs + live prices across every tier) as additional,
+routable models with `provider: "openrouter"`. Effects:
+- **Cross-provider cost optimization** — the cheapest capable model wins regardless of
+  provider (e.g. an OpenRouter nano at $0.02/$0.03 can beat the inference-endpoint nano).
+- **Cross-provider failover** — fallback chains span providers, so an inference-endpoint
+  outage falls through to an equivalent OpenRouter model.
+Without the key, no OpenRouter models are loaded (the router never routes to a provider it
+can't reach). Customize the catalog via `ROUTER_OPENROUTER_MODELS`.
+
 ## Usage
 
 ```bash

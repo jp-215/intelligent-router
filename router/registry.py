@@ -19,6 +19,13 @@ from .models import (
     ModelSpec,
 )
 
+_CAP_BY_NAME = {
+    "reasoning": CAP_REASONING,
+    "code": CAP_CODE,
+    "long_context": CAP_LONG_CONTEXT,
+    "vision": CAP_VISION,
+}
+
 # USD per 1M tokens, (input, output). ESTIMATES — replace with real numbers.
 TIER_PRICING = {
     "nano": (0.05, 0.20),
@@ -71,6 +78,29 @@ def _apply_overrides(specs: list[ModelSpec]) -> list[ModelSpec]:
     return out
 
 
+def _load_openrouter() -> list[ModelSpec]:
+    """Load OpenRouter-backed models from JSON — only when OPENROUTER_API_KEY is set, so
+    the router never routes to a provider it can't reach. Path: ROUTER_OPENROUTER_MODELS
+    or ./openrouter-models.json at the repo root."""
+    if not os.getenv("OPENROUTER_API_KEY"):
+        return []
+    default = os.path.join(os.path.dirname(os.path.dirname(__file__)), "openrouter-models.json")
+    path = os.getenv("ROUTER_OPENROUTER_MODELS", default)
+    if not path or not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        entries = json.load(fh)
+    specs = []
+    for e in entries:
+        caps = frozenset(_CAP_BY_NAME[c] for c in e.get("caps", []) if c in _CAP_BY_NAME)
+        specs.append(
+            ModelSpec(id=e["id"], provider="openrouter", tier=e["tier"],
+                      price_in=float(e["price_in"]), price_out=float(e["price_out"]),
+                      capabilities=caps, open_source=bool(e.get("open_source", False)))
+        )
+    return specs
+
+
 def build_registry() -> list[ModelSpec]:
     specs = []
     for model_id, tier, caps, open_source in _CATALOG:
@@ -80,6 +110,7 @@ def build_registry() -> list[ModelSpec]:
                       price_in=price_in, price_out=price_out, capabilities=caps,
                       open_source=open_source)
         )
+    specs.extend(_load_openrouter())
     return _apply_overrides(specs)
 
 

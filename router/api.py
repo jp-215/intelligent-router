@@ -60,14 +60,19 @@ def get_budget() -> BudgetManager:
 
 
 def get_completer():
-    """Default completer hits the real inference provider. Overridden in tests."""
-    from .providers import InferenceProvider
+    """Provider-aware completer: dispatches each model to its own provider (inference vs
+    OpenRouter) based on the registry. Overridden in tests."""
+    from .providers import InferenceProvider, OpenRouterProvider
+    from .registry import by_id
 
-    provider = InferenceProvider()
+    inference = InferenceProvider()
+    openrouter = OpenRouterProvider()
 
     def complete(model_id: str, prompt: str):
         mt = int(os.getenv("ROUTER_MAX_TOKENS", "8000"))
         msgs = [{"role": "user", "content": prompt}]
+        spec = by_id(model_id)
+        provider = openrouter if (spec and spec.provider == "openrouter") else inference
         return provider.complete(model_id, msgs, max_tokens=mt)
 
     return complete

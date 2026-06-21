@@ -1,0 +1,12 @@
+[
+  {"id": "meta-llama/llama-3.1-8b-instruct", "tier": "nano", "caps": ["code"], "price_in": 0.02, "price_out": 0.03, "open_source": true},
+  {"id": "deepseek/deepseek-v4-flash", "tier": "mini", "caps": ["reasoning", "code"], "price_in": 0.09, "price_out": 0.18, "open_source": true},
+  {"id": "openai/gpt-4o-mini-2024-07-18", "tier": "mini", "caps": ["reasoning", "code", "vision"], "price_in": 0.15, "price_out": 0.60},
+  {"id": "mistralai/mistral-small-24b-instruct-2501", "tier": "standard", "caps": ["code"], "price_in": 0.05, "price_out": 0.08, "open_source": true},
+  {"id": "qwen/qwen3.5-plus-20260420", "tier": "standard", "caps": ["reasoning", "code", "long_context"], "price_in": 0.30, "price_out": 1.80, "open_source": true},
+  {"id": "qwen/qwen3.7-plus", "tier": "pro", "caps": ["reasoning", "code", "long_context"], "price_in": 0.32, "price_out": 1.28, "open_source": true},
+  {"id": "deepseek/deepseek-v4-pro", "tier": "pro", "caps": ["reasoning", "code", "long_context"], "price_in": 0.435, "price_out": 0.87, "open_source": true},
+  {"id": "z-ai/glm-5.1", "tier": "pro", "caps": ["reasoning", "code", "long_context"], "price_in": 0.98, "price_out": 3.08, "open_source": true},
+  {"id": "anthropic/claude-opus-4.8", "tier": "frontier", "caps": ["reasoning", "code", "long_context", "vision"], "price_in": 5.0, "price_out": 25.0},
+  {"id": "openai/gpt-5.5", "tier": "frontier", "caps": ["reasoning", "code", "long_context", "vision"], "price_in": 5.0, "price_out": 30.0}
+]
